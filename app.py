@@ -1,11 +1,34 @@
+from typing import List
+
 from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, func
+from flask_assets import Environment, Bundle
+from dotenv import load_dotenv
 
-app = Flask(__name__)
+load_dotenv()
+
+app = Flask(__name__, instance_relative_config=False)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@localhost:15432/poll_database'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = 'secret string'
+
+assets = Environment(app)
+style_bundle = Bundle(
+    'vendor/less/*.less',
+    filters='less,cssmin',
+    output='dist/css/style.min.css',
+    extra={'rel': 'stylesheet/css'}
+)
+create_poll_js = Bundle(
+    'src/js/create-poll.js',
+    filters='jsmin',
+    output='dist/js/create-poll.min.js'
+)
+assets.register('main_styles', style_bundle)
+assets.register('main_js', create_poll_js)
+style_bundle.build()
+create_poll_js.build()
 
 db = SQLAlchemy(app)
 
@@ -33,21 +56,9 @@ class Poll(db.Model):
         }
 
 
-class Vote(db.Model):
-    vote_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    poll_id = db.Column(db.Integer, ForeignKey('poll.poll_id'))
-    user = db.Column(db.String(32))
-    value = db.Column(db.String(64))
-
-    def __init__(self, poll_id, user, value):
-        self.poll_id = poll_id
-        self.user = user
-        self.value = value
-
-
 class PollOption(db.Model):
     option_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    poll_id = db.Column(db.Integer, ForeignKey('poll.poll_id'), primary_key=True)
+    poll_id = db.Column(db.Integer, ForeignKey('poll.poll_id'))
     value = db.Column(db.String(64))
 
     def __init__(self, poll_id, value):
@@ -55,7 +66,32 @@ class PollOption(db.Model):
         self.value = value
 
 
-@app.route('/poll/<poll_id>')
+class Vote(db.Model):
+    vote_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    poll_id = db.Column(db.Integer, ForeignKey('poll.poll_id'))
+    option_id = db.Column(db.Integer, ForeignKey('poll_option.option_id'))
+    user = db.Column(db.String(32))
+
+    def __init__(self, poll_id, option_id, user):
+        self.poll_id = poll_id
+        self.option_id = option_id
+        self.user = user
+
+
+class QuestionResult:
+    def __init__(self, value: str, count: int, percent: float):
+        self.value = value
+        self.count = count
+        self.percent = percent
+
+
+class PollResultPage:
+    def __init__(self, poll: Poll, questions_result: List[QuestionResult]):
+        self.poll = poll
+        self.questions_result = questions_result
+
+
+@app.route('/poll/<poll_id>/')
 def poll_page(poll_id):
     try:
         poll_id = int(poll_id)
@@ -78,10 +114,29 @@ def poll_page(poll_id):
 def vote(poll_id):
     user = 'João'
     value = request.form['poll_option']
-    entry = Vote(poll_id=poll_id, user=user, value=value)
+    option = db.session.query(PollOption).filter_by(poll_id=poll_id, value=value).first()
+    entry = Vote(poll_id=poll_id, option_id=option.option_id, user=user)
     db.session.add(entry)
     db.session.commit()
     return redirect(url_for('poll_page', poll_id=poll_id))
+
+
+@app.route('/poll/<poll_id>/results')
+def results_page(poll_id):
+    current_poll: Poll = db.session.query(Poll).filter_by(poll_id=poll_id).first()
+    questions = db.session.query(PollOption.value, func.count(Vote.option_id)).join(Vote, isouter=True).group_by(PollOption.option_id).all()
+    questions_result = []
+    total = 0
+    for question in questions:
+        total += question[1]
+
+    for question in questions:
+        value = str(question[0])
+        count = int(question[1])
+        percent = (count / total) * 100
+        questions_result.append(QuestionResult(value=value, count=count, percent=percent))
+    data = PollResultPage(current_poll, questions_result=questions_result)
+    return render_template('poll-result.html', data=data)
 
 
 @app.route('/create')
@@ -93,7 +148,7 @@ def create_poll():
 def save_poll():
     title = request.form.get('title')
     options = request.form.getlist('options')
-    
+
     poll = Poll(name=title, author='Joao', published='04/07/2021')
     db.session.add(poll)
     db.session.commit()
