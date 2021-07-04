@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+    <div style="margin: 50px auto auto;width: 50%;border: 3px solid black;padding: 25px 90px;">
+        <h2 style="text-align: center;">New poll</h2>
+        <form method="POST" action="{{ action }}">
+            <label>
+                Title
+                <input class="form-control form-control-lg" style="margin-bottom: 25px" type="text" name="title"
+                       placeholder="Type your question here">
+            </label>
+            <div id="options-container">
+                <label>
+                    <input class="form-control" type="text" name="options" autocomplete="off"
+                           placeholder="Type your answers here">
+                </label>
+                {% for i in range(3) %}
+                    <label>
+                        <input class="form-control" type="text" name="options" autocomplete="off"
+                               onchange="onInputChange()">
+                    </label>
+                {% endfor %}
+            </div>
+            <div class="row" style="bottom: 0; position: relative; margin-top: 30px">
+                <button type="submit" class="btn btn-primary" style="width: 500px">Create Poll</button>
+            </div>
+        </form>
+    </div>
+    <script src="{{ url_for('static', filename='js/create-poll.js') }}"></script>
+{% endblock %}

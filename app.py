@@ -4,14 +4,14 @@ from sqlalchemy import ForeignKey
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@localhost:15432/poll_database'
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = 'secret string'
 
 db = SQLAlchemy(app)
 
 
 class Poll(db.Model):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    poll_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(128))
     author = db.Column(db.String(32))
     published = db.Column(db.String(32))
@@ -22,11 +22,11 @@ class Poll(db.Model):
         self.published = published
 
     def __repr__(self):
-        return '<id {}>'.format(self.id)
+        return '<poll_id {}>'.format(self.poll_id)
 
     def serialize(self):
         return {
-            'id': self.id,
+            'poll_id': self.poll_id,
             'name': self.name,
             'author': self.author,
             'published': self.published
@@ -34,8 +34,8 @@ class Poll(db.Model):
 
 
 class Vote(db.Model):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    poll_id = db.Column(db.Integer, ForeignKey("poll.id"))
+    vote_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    poll_id = db.Column(db.Integer, ForeignKey('poll.poll_id'))
     user = db.Column(db.String(32))
     value = db.Column(db.String(64))
 
@@ -45,24 +45,65 @@ class Vote(db.Model):
         self.value = value
 
 
-@app.route("/poll/<poll_id>")
-def poll(poll_id):
-    current_poll = db.session.query(Poll).filter_by(id=poll_id).first()
-    if current_poll is not None:
-        return render_template('poll.html', title=current_poll.name, action=url_for('vote', poll_id=poll_id),
-                               poll_title=current_poll.name)
-    else:
-        return "Id invalido"
+class PollOption(db.Model):
+    option_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    poll_id = db.Column(db.Integer, ForeignKey('poll.poll_id'), primary_key=True)
+    value = db.Column(db.String(64))
+
+    def __init__(self, poll_id, value):
+        self.poll_id = poll_id
+        self.value = value
 
 
-@app.route("/poll/<poll_id>/vote/", methods=['POST'])
+@app.route('/poll/<poll_id>')
+def poll_page(poll_id):
+    try:
+        poll_id = int(poll_id)
+    except ValueError:
+        return 'Id invalido'
+
+    current_poll = db.session.query(Poll).filter_by(poll_id=poll_id).first()
+    if current_poll is None:
+        return 'Id invalido'
+
+    options = db.session.query(PollOption).filter_by(poll_id=poll_id).all()
+    return render_template('poll.html',
+                           title=current_poll.name,
+                           action=url_for('vote', poll_id=poll_id),
+                           poll_title=current_poll.name,
+                           poll_options=options)
+
+
+@app.route('/poll/<poll_id>/vote/', methods=['POST'])
 def vote(poll_id):
-    user = "João"
-    value = request.form["poll_option"]
+    user = 'João'
+    value = request.form['poll_option']
     entry = Vote(poll_id=poll_id, user=user, value=value)
     db.session.add(entry)
     db.session.commit()
-    return redirect(url_for('poll', poll_id=poll_id))
+    return redirect(url_for('poll_page', poll_id=poll_id))
+
+
+@app.route('/create')
+def create_poll():
+    return render_template('create-poll.html', action='save-poll')
+
+
+@app.route('/save-poll', methods=['POST'])
+def save_poll():
+    title = request.form.get('title')
+    options = request.form.getlist('options')
+    
+    poll = Poll(name=title, author='Joao', published='04/07/2021')
+    db.session.add(poll)
+    db.session.commit()
+
+    for option in options:
+        if option != '':
+            db.session.add(PollOption(poll_id=poll.poll_id, value=option))
+    db.session.commit()
+
+    return redirect(url_for('poll_page', poll_id=poll.poll_id))
 
 
 def main():
