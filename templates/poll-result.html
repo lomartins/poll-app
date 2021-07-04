@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/style.min.css') }}">
+    <div style="margin: 50px auto auto;width: 50.5%;border: 3px solid black;padding: 25px 25px;">
+        <div class="chart-wrap">
+            <h2 class="title">Result: {{ data.poll.name }}</h2>
+            <div class="grid horizontal">
+                {% for result in data.questions_result %}
+                    <div class="bar" style="--bar-value:{{ result.percent }}%;"
+                         data-name="{{ result.count if result.count > 0 }}"><span style="padding-left: 5px">{{ result.value }}</span></div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
