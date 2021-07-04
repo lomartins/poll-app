@@ -122,9 +122,10 @@ def vote(poll_id):
 
 
 @app.route('/poll/<poll_id>/results')
-def results_page(poll_id):
+def poll_result(poll_id):
     current_poll: Poll = db.session.query(Poll).filter_by(poll_id=poll_id).first()
-    questions = db.session.query(PollOption.value, func.count(Vote.option_id)).join(Vote, isouter=True).group_by(PollOption.option_id).all()
+    questions = db.session.query(PollOption.value, func.count(Vote.option_id)).join(Vote, isouter=True).group_by(
+        PollOption.option_id).all()
     questions_result = []
     total = 0
     for question in questions:
@@ -159,6 +160,20 @@ def save_poll():
     db.session.commit()
 
     return redirect(url_for('poll_page', poll_id=poll.poll_id))
+
+
+@app.route('/poll/<poll_id>/manage/')
+def manage_poll(poll_id):
+    try:
+        poll_id = int(poll_id)
+    except ValueError:
+        return 'Id invalido'
+
+    current_poll = db.session.query(Poll).filter_by(poll_id=poll_id).first()
+    if current_poll is None:
+        return 'Id invalido'
+
+    return render_template('poll-manage.html', poll_id=poll_id, poll_title=current_poll.name)
 
 
 def main():
