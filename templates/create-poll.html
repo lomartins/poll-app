@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+    <div style="margin: 50px auto auto;width: 50%;border: 3px solid black;padding: 25px 90px;">
+        <h2 style="text-align: center;">{{ poll_title }}</h2>
+        <form method="POST" action="{{ action }}">
+            <label>
+                Title
+                <input class="form-control form-control-lg" style="margin-bottom: 25px" type="text" name="title" placeholder="Type your question here">
+            </label>
+            <label>
+                <input class="form-control" type="text" name="options" placeholder="Type your answers here">
+            </label>
+            {% for i in range(3) %}
+                <label>
+                    <input class="form-control" type="text" name="options">
+                </label>
+            {% endfor %}
+            <div class="row" style="bottom: 0; position: relative; margin-top: 30px">
+                <button type="submit" class="btn btn-primary" style="width: 500px">Create Poll</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}
