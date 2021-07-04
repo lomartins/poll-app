@@ -11,7 +11,7 @@ db = SQLAlchemy(app)
 
 
 class Poll(db.Model):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    poll_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(128))
     author = db.Column(db.String(32))
     published = db.Column(db.String(32))
@@ -22,11 +22,11 @@ class Poll(db.Model):
         self.published = published
 
     def __repr__(self):
-        return '<id {}>'.format(self.id)
+        return '<poll_id {}>'.format(self.poll_id)
 
     def serialize(self):
         return {
-            'id': self.id,
+            'poll_id': self.poll_id,
             'name': self.name,
             'author': self.author,
             'published': self.published
@@ -34,8 +34,8 @@ class Poll(db.Model):
 
 
 class Vote(db.Model):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    poll_id = db.Column(db.Integer, ForeignKey("poll.id"))
+    vote_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    poll_id = db.Column(db.Integer, ForeignKey("poll.poll_id"))
     user = db.Column(db.String(32))
     value = db.Column(db.String(64))
 
@@ -45,14 +45,33 @@ class Vote(db.Model):
         self.value = value
 
 
+class PollOption(db.Model):
+    option_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    poll_id = db.Column(db.Integer, ForeignKey("poll.poll_id"), primary_key=True)
+    value = db.Column(db.String(64))
+
+    def __init__(self, poll_id, value):
+        self.poll_id = poll_id
+        self.value = value
+
+
 @app.route("/poll/<poll_id>")
 def poll(poll_id):
-    current_poll = db.session.query(Poll).filter_by(id=poll_id).first()
-    if current_poll is not None:
-        return render_template('poll.html', title=current_poll.name, action=url_for('vote', poll_id=poll_id),
-                               poll_title=current_poll.name)
-    else:
+    try:
+        poll_id = int(poll_id)
+    except ValueError:
         return "Id invalido"
+
+    current_poll = db.session.query(Poll).filter_by(poll_id=poll_id).first()
+    if current_poll is None:
+        return "Id invalido"
+
+    options = db.session.query(PollOption).filter_by(poll_id=poll_id).all()
+    return render_template('poll.html',
+                           title=current_poll.name,
+                           action=url_for('vote', poll_id=poll_id),
+                           poll_title=current_poll.name,
+                           poll_options=options)
 
 
 @app.route("/poll/<poll_id>/vote/", methods=['POST'])
