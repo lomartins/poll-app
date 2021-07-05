@@ -13,29 +13,29 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL']
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = 'secret string'
 
-assets = Environment(app)
-style_bundle = Bundle(
-    'vendor/less/*.less',
-    filters='less,cssmin',
-    output='dist/css/style.min.css',
-    extra={'rel': 'stylesheet/css'}
-)
-create_poll_js = Bundle(
-    'src/js/create-poll.js',
-    filters='jsmin',
-    output='dist/js/create-poll.min.js'
-)
-script_bundle_js = Bundle(
-    'src/js/script.js',
-    filters='jsmin',
-    output='dist/js/script.min.js'
-)
-assets.register('main_styles', style_bundle)
-assets.register('main_js', script_bundle_js)
-assets.register('create_poll_js', create_poll_js)
-style_bundle.build()
-script_bundle_js.build()
-create_poll_js.build()
+# assets = Environment(app)
+# style_bundle = Bundle(
+#     'vendor/less/*.less',
+#     filters='less,cssmin',
+#     output='dist/css/style.min.css',
+#     extra={'rel': 'stylesheet/css'}
+# )
+# create_poll_js = Bundle(
+#     'src/js/create-poll.js',
+#     filters='jsmin',
+#     output='dist/js/create-poll.min.js'
+# )
+# script_bundle_js = Bundle(
+#     'src/js/script.js',
+#     filters='jsmin',
+#     output='dist/js/script.min.js'
+# )
+# assets.register('main_styles', style_bundle)
+# assets.register('main_js', script_bundle_js)
+# assets.register('create_poll_js', create_poll_js)
+# style_bundle.build()
+# script_bundle_js.build()
+# create_poll_js.build()
 
 db = SQLAlchemy(app)
 
