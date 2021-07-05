@@ -188,7 +188,7 @@ def manage_poll(poll_id):
 
 def main():
     db.create_all()
-    app.run(port=8080, debug=True)
+    app.run()
 
 
 if __name__ == '__main__':
