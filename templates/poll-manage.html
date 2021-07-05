@@ -2,6 +2,9 @@
 {% block content %}
     <div style="margin: 50px auto auto;width: 50%;border: 3px solid black;padding: 25px 90px;">
         <h2 style="text-align: center; padding-bottom: 15px">{{ poll_title }}</h2>
+        <input readonly type="text" id="link-url"
+               value="{{ request.url_root[:-1] + url_for('poll_page', poll_id=poll_id) }}">
+        <button onclick="copyElementValue('link-url')">Copy text</button>
 
         <div class="row" style="bottom: 0; position: relative; margin-top: 30px">
             <a href="{{ url_for('poll_result', poll_id=poll_id) }}">
@@ -9,4 +12,5 @@
             </a>
         </div>
     </div>
+    <script src="{{ url_for('static', filename='dist/js/script.min.js') }}"></script>
 {% endblock %}

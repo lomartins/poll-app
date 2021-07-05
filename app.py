@@ -25,9 +25,16 @@ create_poll_js = Bundle(
     filters='jsmin',
     output='dist/js/create-poll.min.js'
 )
+script_bundle_js = Bundle(
+    'src/js/script.js',
+    filters='jsmin',
+    output='dist/js/script.min.js'
+)
 assets.register('main_styles', style_bundle)
-assets.register('main_js', create_poll_js)
+assets.register('main_js', script_bundle_js)
+assets.register('create_poll_js', create_poll_js)
 style_bundle.build()
+script_bundle_js.build()
 create_poll_js.build()
 
 db = SQLAlchemy(app)
@@ -140,9 +147,9 @@ def poll_result(poll_id):
     return render_template('poll-result.html', data=data)
 
 
-@app.route('/create')
+@app.route('/create/')
 def create_poll():
-    return render_template('create-poll.html', action='save-poll')
+    return render_template('create-poll.html')
 
 
 @app.route('/save-poll', methods=['POST'])
@@ -159,7 +166,7 @@ def save_poll():
             db.session.add(PollOption(poll_id=poll.poll_id, value=option))
     db.session.commit()
 
-    return redirect(url_for('poll_page', poll_id=poll.poll_id))
+    return redirect(url_for('manage_poll', poll_id=poll.poll_id))
 
 
 @app.route('/poll/<poll_id>/manage/')
