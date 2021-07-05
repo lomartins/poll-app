@@ -124,8 +124,8 @@ def vote(poll_id):
 @app.route('/poll/<poll_id>/results')
 def poll_result(poll_id):
     current_poll: Poll = db.session.query(Poll).filter_by(poll_id=poll_id).first()
-    questions = db.session.query(PollOption.value, func.count(Vote.option_id)).join(Vote, isouter=True).group_by(
-        PollOption.option_id).all()
+    questions = db.session.query(PollOption.value, func.count(Vote.option_id)).join(Vote, isouter=True).filter_by(
+        poll_id=poll_id).group_by(PollOption.option_id).all()
     questions_result = []
     total = 0
     for question in questions:
