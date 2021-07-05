@@ -131,8 +131,8 @@ def vote(poll_id):
 @app.route('/poll/<poll_id>/results')
 def poll_result(poll_id):
     current_poll: Poll = db.session.query(Poll).filter_by(poll_id=poll_id).first()
-    questions = db.session.query(PollOption.value, func.count(Vote.option_id)).join(Vote, isouter=True).filter_by(
-        poll_id=poll_id).group_by(PollOption.option_id).all()
+    questions = db.session.query(PollOption.value, func.count(Vote.option_id)).join(Vote, isouter=True).where(
+        PollOption.poll_id == poll_id).group_by(PollOption.option_id).all()
     questions_result = []
     total = 0
     for question in questions:
@@ -141,7 +141,10 @@ def poll_result(poll_id):
     for question in questions:
         value = str(question[0])
         count = int(question[1])
-        percent = (count / total) * 100
+        if total > 0:
+            percent = (count / total) * 100
+        else:
+            percent = 0
         questions_result.append(QuestionResult(value=value, count=count, percent=percent))
     data = PollResultPage(current_poll, questions_result=questions_result)
     return render_template('poll-result.html', data=data)
